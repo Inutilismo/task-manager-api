@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request
 from flask_restx import Namespace, Resource, fields
 
 api = Namespace("tasks", description="Task operations")
@@ -21,21 +21,24 @@ tasks_response_model = api.model(
 
 @api.route("/")
 class TaskList(Resource):
-    @api.doc("list_tasks")
-    @api.marshal_list_with(task_model)
+    @api.param("page", "Page number", required=False, default=1)
+    @api.param("page_size", "Number of tasks per page", required=False, default=10)
     def get(self):
-        """List all tasks"""
-        from database import Task
-        tasks = Task.query.all()  
+        """List all tasks with pagination"""
+        from app.database import Task
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 10))
+        tasks_query = Task.query
+        tasks = tasks_query.offset((page - 1) * page_size).limit(page_size).all()
         return [t.as_dict() for t in tasks]
 
-    @api.doc("create_task")
-    @api.expect(task_model)
-    @api.marshal_with(task_model, code=201)
+    @api.expect(task_model, validate=True)
     def post(self):
         """Create a new task"""
-        from database import db_session, Task
+        from app.database import db_session, Task
         data = request.json
+        if not data.get("name"):
+            api.abort(400, "The 'name' field is required.")
         task = Task(name=data["name"], description=data.get("description", ""))
         db_session.add(task)
         db_session.commit()
@@ -49,7 +52,7 @@ class Task(Resource):
     @api.marshal_with(task_model)
     def get(self, task_id):
         """Fetch a task by ID"""
-        from database import Task
+        from app.database import Task
         task = Task.query.get(task_id)
         if not task:
             api.abort(404, "Task not found")
@@ -60,7 +63,7 @@ class Task(Resource):
     @api.marshal_with(task_model)
     def put(self, task_id):
         """Update a task"""
-        from database import Task, db_session
+        from app.database import Task, db_session
         task = Task.query.get(task_id)
         if not task:
             api.abort(404, "Task not found")
@@ -73,7 +76,7 @@ class Task(Resource):
     @api.doc("delete_task")
     def delete(self, task_id):
         """Delete a task"""
-        from database import Task, db_session
+        from app.database import Task, db_session
         task = Task.query.get(task_id)
         if not task:
             api.abort(404, "Task not found")

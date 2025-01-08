@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 import os
 
@@ -31,10 +31,7 @@ Task.query = db_session.query_property()
 
 def init_db():
     """Initialize the database."""
-    global engine, db_session
-    engine = create_engine(get_database_url())
-    Session = sessionmaker(bind=engine)
-    db_session = Session()
+    from app.database import Base, engine
     Base.metadata.create_all(engine)
     print("Database initialized.")
 
