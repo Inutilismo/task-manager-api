@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'gabriel1502affonso/task-manager-api'
-        KUBECONFIG = credentials('kubeconfig')
+        KUBECONFIG = credentials('docker-desktop-kubeconfig')
     }
 
     stages {
@@ -33,7 +33,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig']) {
+                withKubeConfig([credentialsId: 'docker-desktop-kubeconfig']) {
                     sh 'helm upgrade --install task-manager-api ./helm/task-manager-api --namespace task-manager-api'
                 }
             }
