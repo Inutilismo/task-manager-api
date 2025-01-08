@@ -34,7 +34,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: 'docker-desktop-kubeconfig']) {
-                    sh 'helm upgrade --install task-manager-api ./helm/task-manager-api --namespace task-manager-api'
+                    container('helm') {
+                        sh 'helm upgrade --install task-manager-api ./helm/task-manager-api --namespace task-manager-api'
+                    }
                 }
             }
         }
