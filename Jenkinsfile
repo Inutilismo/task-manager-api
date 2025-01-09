@@ -8,15 +8,27 @@ pipeline {
 
     stages {
         stage('Verify Tools') {
-            steps {
-                container('docker') {
-                    sh 'docker --version'
+            parallel {
+                stage('Check Docker') {
+                    steps {
+                        container('docker') {
+                            sh 'docker --version'
+                        }
+                    }
                 }
-                container('kubectl') {
-                    sh 'kubectl version --client'
+                stage('Check Kubectl') {
+                    steps {
+                        container('kubectl') {
+                            sh 'kubectl version --client'
+                        }
+                    }
                 }
-                container('kubectl') {
-                    sh 'helm version'
+                stage('Check Helm') {
+                    steps {
+                        container('kubectl') {
+                            sh 'helm version'
+                        }
+                    }
                 }
             }
         }
@@ -31,7 +43,7 @@ pipeline {
             steps {
                 container('docker') {
                     script {
-                        docker.build("${DOCKER_IMAGE}:latest")
+                        docker.build("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                     }
                 }
             }
@@ -42,7 +54,7 @@ pipeline {
                 container('docker') {
                     script {
                         docker.withRegistry('https://index.docker.io/v1/', 'docker-hub') {
-                            docker.image("${DOCKER_IMAGE}:latest").push()
+                            docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}").push()
                         }
                     }
                 }
@@ -53,7 +65,11 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'docker-desktop-kubeconfig']) {
                     container('kubectl') {
-                        sh 'helm upgrade --install task-manager-api ./task-manager-api --namespace task-manager-api'
+                        sh """
+                        helm upgrade --install task-manager-api ./task-manager-api \
+                        --namespace task-manager-api \
+                        --set image.tag=${BUILD_NUMBER}
+                        """
                     }
                 }
             }
