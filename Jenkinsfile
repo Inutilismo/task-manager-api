@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        kubernetes {
-            label 'multi-tools-pod'
-            defaultContainer 'jnlp'
-        }
-    }
+    agent any
 
     environment {
         DOCKER_IMAGE = 'gabriel1502affonso/task-manager-api'
@@ -20,7 +15,7 @@ pipeline {
                 container('kubectl') {
                     sh 'kubectl version --client'
                 }
-                container('helm') {
+                container('kubectl') {
                     sh 'helm version'
                 }
             }
@@ -58,7 +53,7 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'docker-desktop-kubeconfig']) {
                     container('kubectl') {
-                        sh 'helm upgrade --install task-manager-api ./helm/task-manager-api --namespace task-manager-api'
+                        sh 'helm upgrade --install task-manager-api ./task-manager-api --namespace task-manager-api'
                     }
                 }
             }
