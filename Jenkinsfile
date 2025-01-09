@@ -7,6 +7,23 @@ pipeline {
     }
 
     stages {
+
+        stage('Setup Tools') {
+            steps {
+                sh '''
+                apt-get update && apt-get install -y apt-transport-https ca-certificates curl gnupg
+                curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+                apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
+
+                curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                chmod +x kubectl && mv kubectl /usr/local/bin/
+
+                curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+                '''
+            }
+        }
+
         stage('Clone Repository') {
             steps {
                 git branch: 'main', url: 'https://github.com/Inutilismo/task-manager-api.git'
@@ -34,9 +51,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: 'docker-desktop-kubeconfig']) {
-                    container('helm') {
-                        sh 'helm upgrade --install task-manager-api ./helm/task-manager-api --namespace task-manager-api'
-                    }
+                    sh 'helm upgrade --install task-manager-api ./helm/task-manager-api --namespace task-manager-api'
                 }
             }
         }
